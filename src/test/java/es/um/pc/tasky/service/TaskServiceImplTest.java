@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -193,5 +194,41 @@ class TaskServiceImplTest {
         taskService.deleteTask(1L);
 
         verify(taskRepository, times(1)).delete(sampleTask);
+    }
+
+    @Test
+    @DisplayName("Sin filtro de estado se devuelven todas las tareas")
+    void getAllTasks_withoutStatus_returnsAllTasks() {
+        Task other = new Task();
+        other.setId(2L);
+        other.setStatus(TaskStatus.IN_PROGRESS);
+        when(taskRepository.findAll()).thenReturn(List.of(sampleTask, other));
+
+        List<Task> result = taskService.getAllTasks(null);
+
+        assertEquals(2, result.size());
+        verify(taskRepository, never()).findByStatus(any());
+    }
+
+    @Test
+    @DisplayName("Con filtro de estado solo se devuelven las tareas de ese estado")
+    void getAllTasks_withStatus_returnsOnlyThatStatus() {
+        when(taskRepository.findByStatus(TaskStatus.PENDING)).thenReturn(List.of(sampleTask));
+
+        List<Task> result = taskService.getAllTasks(TaskStatus.PENDING);
+
+        assertEquals(1, result.size());
+        assertEquals(TaskStatus.PENDING, result.get(0).getStatus());
+        verify(taskRepository, never()).findAll();
+    }
+
+    @Test
+    @DisplayName("Filtrar por un estado sin tareas devuelve una lista vacía")
+    void getAllTasks_withStatusWithoutMatches_returnsEmptyList() {
+        when(taskRepository.findByStatus(TaskStatus.CANCELLED)).thenReturn(List.of());
+
+        List<Task> result = taskService.getAllTasks(TaskStatus.CANCELLED);
+
+        assertTrue(result.isEmpty());
     }
 }

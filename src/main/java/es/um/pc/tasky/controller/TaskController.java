@@ -3,6 +3,7 @@ package es.um.pc.tasky.controller;
 import es.um.pc.tasky.dto.TaskRequest;
 import es.um.pc.tasky.dto.TaskResponse;
 import es.um.pc.tasky.model.Task;
+import es.um.pc.tasky.model.TaskStatus;
 import es.um.pc.tasky.service.TaskService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -36,8 +38,9 @@ public class TaskController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TaskResponse>> getAllTasks() {
-        List<TaskResponse> tasks = taskService.getAllTasks().stream()
+    public ResponseEntity<List<TaskResponse>> getAllTasks(
+            @RequestParam(required = false) TaskStatus status) {
+        List<TaskResponse> tasks = taskService.getAllTasks(status).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(tasks);
