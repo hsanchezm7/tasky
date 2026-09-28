@@ -27,4 +27,6 @@ public interface TaskService {
    * tareas vencidas (fecha límite anterior a hoy y estado distinto de COMPLETED y CANCELLED).
    */
   TaskStatsResponse getStats();
+
+  List<Task> getOverdueTasks();
 }

@@ -284,4 +284,41 @@ class TaskServiceImplTest {
         .countByDueDateBeforeAndStatusNotIn(
             eq(LocalDate.now()), eq(EnumSet.of(TaskStatus.COMPLETED, TaskStatus.CANCELLED)));
   }
+
+  @Test
+  @DisplayName("Devuelve las tareas vencidas delegando en el repositorio con la fecha actual y excluyendo COMPLETED y CANCELLED")
+  void getOverdueTasks_delegatesToRepositoryWithTodayAndExcludesClosedStatuses() {
+    Task overdueTask = new Task();
+    overdueTask.setId(1L);
+    overdueTask.setTitle("Tarea vencida");
+    overdueTask.setStatus(TaskStatus.IN_PROGRESS);
+    overdueTask.setDueDate(LocalDate.now().minusDays(2));
+
+    when(taskRepository.findByDueDateBeforeAndStatusNotIn(
+        eq(LocalDate.now()), eq(EnumSet.of(TaskStatus.COMPLETED, TaskStatus.CANCELLED))))
+        .thenReturn(List.of(overdueTask));
+
+    List<Task> result = taskService.getOverdueTasks();
+
+    assertEquals(1, result.size());
+    assertEquals("Tarea vencida", result.get(0).getTitle());
+    verify(taskRepository)
+        .findByDueDateBeforeAndStatusNotIn(
+            eq(LocalDate.now()), eq(EnumSet.of(TaskStatus.COMPLETED, TaskStatus.CANCELLED)));
+  }
+
+  @Test
+  @DisplayName("Si no hay tareas vencidas, devuelve una lista vacía")
+  void getOverdueTasks_whenNoneOverdue_returnsEmptyList() {
+    when(taskRepository.findByDueDateBeforeAndStatusNotIn(
+        eq(LocalDate.now()), eq(EnumSet.of(TaskStatus.COMPLETED, TaskStatus.CANCELLED))))
+        .thenReturn(List.of());
+
+    List<Task> result = taskService.getOverdueTasks();
+
+    assertTrue(result.isEmpty());
+    verify(taskRepository)
+        .findByDueDateBeforeAndStatusNotIn(
+            eq(LocalDate.now()), eq(EnumSet.of(TaskStatus.COMPLETED, TaskStatus.CANCELLED)));
+  }
 }

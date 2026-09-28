@@ -62,6 +62,14 @@ public class TaskController {
     return ResponseEntity.ok(toResponse(updated));
   }
 
+  @GetMapping("/overdue")
+  public ResponseEntity<List<TaskResponse>> getOverdueTasks() {
+    List<TaskResponse> overdueTasks = taskService.getOverdueTasks().stream()
+        .map(this::toResponse)
+        .collect(Collectors.toList());
+    return ResponseEntity.ok(overdueTasks);
+  }
+
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
     taskService.deleteTask(id);
