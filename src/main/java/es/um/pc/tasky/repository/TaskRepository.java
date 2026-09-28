@@ -19,4 +19,6 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
   long countByPriority(TaskPriority priority);
 
   long countByDueDateBeforeAndStatusNotIn(LocalDate date, Collection<TaskStatus> statuses);
+
+  List<Task> findByDueDateBeforeAndStatusNotIn(LocalDate date, Collection<TaskStatus> statuses);
 }
