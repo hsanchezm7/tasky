@@ -1,12 +1,17 @@
 package es.um.pc.tasky.service;
 
+import es.um.pc.tasky.dto.TaskStatsResponse;
 import es.um.pc.tasky.exception.InvalidTaskException;
 import es.um.pc.tasky.exception.ResourceNotFoundException;
 import es.um.pc.tasky.model.Task;
+import es.um.pc.tasky.model.TaskPriority;
 import es.um.pc.tasky.model.TaskStatus;
 import es.um.pc.tasky.repository.TaskRepository;
 import java.time.LocalDate;
+import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -71,6 +76,26 @@ public class TaskServiceImpl implements TaskService {
   public void deleteTask(Long id) {
     Task existing = getTaskById(id);
     taskRepository.delete(existing);
+  }
+
+  @Override
+  public TaskStatsResponse getStats() {
+    Map<TaskStatus, Long> byStatus = new EnumMap<>(TaskStatus.class);
+    for (TaskStatus status : TaskStatus.values()) {
+      byStatus.put(status, taskRepository.countByStatus(status));
+    }
+
+    Map<TaskPriority, Long> byPriority = new EnumMap<>(TaskPriority.class);
+    for (TaskPriority priority : TaskPriority.values()) {
+      byPriority.put(priority, taskRepository.countByPriority(priority));
+    }
+
+    // Una tarea vencida sigue abierta y su fecha límite ya pasó; la que vence hoy no cuenta.
+    long overdue =
+        taskRepository.countByDueDateBeforeAndStatusNotIn(
+            LocalDate.now(), EnumSet.of(TaskStatus.COMPLETED, TaskStatus.CANCELLED));
+
+    return new TaskStatsResponse(taskRepository.count(), byStatus, byPriority, overdue);
   }
 
   /** Regla de negocio: no se puede crear ni dejar una tarea con una fecha límite pasada. */

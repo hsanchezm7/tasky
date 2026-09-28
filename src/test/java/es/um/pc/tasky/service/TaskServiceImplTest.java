@@ -4,11 +4,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import es.um.pc.tasky.dto.TaskStatsResponse;
 import es.um.pc.tasky.exception.InvalidTaskException;
 import es.um.pc.tasky.exception.ResourceNotFoundException;
 import es.um.pc.tasky.model.Task;
@@ -16,7 +18,9 @@ import es.um.pc.tasky.model.TaskPriority;
 import es.um.pc.tasky.model.TaskStatus;
 import es.um.pc.tasky.repository.TaskRepository;
 import java.time.LocalDate;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -228,5 +232,56 @@ class TaskServiceImplTest {
     List<Task> result = taskService.getAllTasks(TaskStatus.CANCELLED);
 
     assertTrue(result.isEmpty());
+  }
+
+  @Test
+  @DisplayName("El resumen cuenta las tareas por estado, por prioridad y las vencidas")
+  void getStats_withTasks_returnsCounts() {
+    when(taskRepository.count()).thenReturn(6L);
+    when(taskRepository.countByStatus(TaskStatus.PENDING)).thenReturn(3L);
+    when(taskRepository.countByStatus(TaskStatus.IN_PROGRESS)).thenReturn(1L);
+    when(taskRepository.countByStatus(TaskStatus.COMPLETED)).thenReturn(2L);
+    when(taskRepository.countByPriority(TaskPriority.LOW)).thenReturn(1L);
+    when(taskRepository.countByPriority(TaskPriority.MEDIUM)).thenReturn(4L);
+    when(taskRepository.countByPriority(TaskPriority.HIGH)).thenReturn(1L);
+    when(taskRepository.countByDueDateBeforeAndStatusNotIn(any(), any())).thenReturn(2L);
+
+    TaskStatsResponse stats = taskService.getStats();
+
+    assertEquals(6L, stats.getTotal());
+    assertEquals(
+        Map.of(
+            TaskStatus.PENDING, 3L,
+            TaskStatus.IN_PROGRESS, 1L,
+            TaskStatus.COMPLETED, 2L,
+            TaskStatus.CANCELLED, 0L),
+        stats.getByStatus());
+    assertEquals(
+        Map.of(TaskPriority.LOW, 1L, TaskPriority.MEDIUM, 4L, TaskPriority.HIGH, 1L),
+        stats.getByPriority());
+    assertEquals(2L, stats.getOverdue());
+  }
+
+  @Test
+  @DisplayName("Sin tareas, el resumen devuelve todos los contadores a 0 con todas las claves")
+  void getStats_withoutTasks_returnsZeros() {
+    TaskStatsResponse stats = taskService.getStats();
+
+    assertEquals(0L, stats.getTotal());
+    assertEquals(TaskStatus.values().length, stats.getByStatus().size());
+    assertEquals(TaskPriority.values().length, stats.getByPriority().size());
+    assertTrue(stats.getByStatus().values().stream().allMatch(count -> count == 0L));
+    assertTrue(stats.getByPriority().values().stream().allMatch(count -> count == 0L));
+    assertEquals(0L, stats.getOverdue());
+  }
+
+  @Test
+  @DisplayName("Las vencidas se cuentan desde hoy y excluyen las tareas COMPLETED y CANCELLED")
+  void getStats_overdue_usesTodayAndExcludesClosedStatuses() {
+    taskService.getStats();
+
+    verify(taskRepository)
+        .countByDueDateBeforeAndStatusNotIn(
+            eq(LocalDate.now()), eq(EnumSet.of(TaskStatus.COMPLETED, TaskStatus.CANCELLED)));
   }
 }
