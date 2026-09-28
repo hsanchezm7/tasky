@@ -2,6 +2,7 @@ package es.um.pc.tasky.controller;
 
 import es.um.pc.tasky.dto.TaskRequest;
 import es.um.pc.tasky.dto.TaskResponse;
+import es.um.pc.tasky.dto.TaskStatsResponse;
 import es.um.pc.tasky.model.Task;
 import es.um.pc.tasky.model.TaskStatus;
 import es.um.pc.tasky.service.TaskService;
@@ -42,6 +43,11 @@ public class TaskController {
     List<TaskResponse> tasks =
         taskService.getAllTasks(status).stream().map(this::toResponse).collect(Collectors.toList());
     return ResponseEntity.ok(tasks);
+  }
+
+  @GetMapping("/stats")
+  public ResponseEntity<TaskStatsResponse> getStats() {
+    return ResponseEntity.ok(taskService.getStats());
   }
 
   @GetMapping("/{id}")

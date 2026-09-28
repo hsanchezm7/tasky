@@ -83,6 +83,9 @@ curl -i http://localhost:8080/api/tasks/1
 curl -i http://localhost:8080/api/tasks
 curl -i "http://localhost:8080/api/tasks?status=PENDING"
 
+# Resumen de tareas
+curl -i http://localhost:8080/api/tasks/stats
+
 # Recurso inexistente: 404 con JSON de error
 curl -i http://localhost:8080/api/tasks/999
 ```
@@ -95,6 +98,7 @@ La fecha límite debe ser hoy o futura. La consola de H2 está disponible en `ht
 |--------|------|-------------|
 | POST   | `/api/tasks`      | Crea una tarea |
 | GET    | `/api/tasks`      | Lista las tareas; admite `?status=` para filtrar por estado |
+| GET    | `/api/tasks/stats` | Resumen: total, recuento por estado y por prioridad, y tareas vencidas |
 | GET    | `/api/tasks/{id}` | Obtiene una tarea por id |
 | PUT    | `/api/tasks/{id}` | Actualiza una tarea existente |
 | DELETE | `/api/tasks/{id}` | Elimina una tarea |
@@ -119,6 +123,20 @@ Códigos de respuesta: `200` OK, `201` creada, `204` borrada, `400` petición in
 3. Una tarea `COMPLETED` no puede volver a modificarse.
 4. El listado puede filtrarse por estado con `?status=`; sin filtro devuelve todas las tareas.
 5. Leer, actualizar o borrar un `id` inexistente devuelve `404`.
+6. Una tarea está **vencida** si su fecha límite es anterior a hoy y su estado no es `COMPLETED` ni `CANCELLED`; la que vence hoy no cuenta.
+
+### Resumen de tareas
+
+`GET /api/tasks/stats` devuelve un resumen agregado. Los recuentos incluyen todos los estados y prioridades, también los que tienen 0 tareas:
+
+```json
+{
+  "total": 6,
+  "byStatus":   { "PENDING": 3, "IN_PROGRESS": 1, "COMPLETED": 2, "CANCELLED": 0 },
+  "byPriority": { "LOW": 1, "MEDIUM": 4, "HIGH": 1 },
+  "overdue": 2
+}
+```
 
 ## Estructura del proyecto
 
@@ -128,7 +146,7 @@ src/main/java/es/um/pc/tasky
 ├── TaskyApplication.java                  # Clase principal
 ├── model/                                 # Entidad Task y enums TaskStatus / TaskPriority
 ├── repository/                            # TaskRepository (Spring Data JPA)
-├── dto/                                   # TaskRequest (con validaciones) y TaskResponse
+├── dto/                                   # TaskRequest (con validaciones), TaskResponse y TaskStatsResponse
 ├── service/                               # TaskService y TaskServiceImpl (reglas de negocio)
 ├── controller/                            # TaskController (endpoints REST)
 └── exception/                             # Excepciones de negocio y GlobalExceptionHandler
