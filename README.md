@@ -1,6 +1,6 @@
 # tasky
 
-API REST de gestión de tareas (To-Do) construida con **Spring Boot 3**, **Java 21**, **Spring Data JPA / Hibernate** y **H2** en memoria. Es la base del proyecto que se irá ampliando durante el curso (Docker, CI/CD y despliegue).
+API REST de gestión de tareas (To-Do) construida con **Spring Boot 3**, **Java 21**, **Spring Data JPA / Hibernate** y **PostgreSQL**. Es la base del proyecto que se irá ampliando durante el curso (Docker, CI/CD y despliegue).
 
 Cada tarea tiene título, descripción, estado, prioridad y fecha límite. La API ofrece un CRUD completo, filtrado por estado, validaciones con Bean Validation y manejo de errores centralizado (un recurso inexistente devuelve `404` con un JSON de error, nunca una traza).
 
@@ -11,10 +11,11 @@ Cada tarea tiene título, descripción, estado, prioridad y fecha límite. La AP
 | Git         | cualquiera reciente | `git --version` |
 | JDK         | **21**  | `java -version` |
 | Maven       | 3.9+    | `mvn -version` |
+| Docker (con Compose) | cualquiera reciente | `docker compose version` |
 
 `mvn -version` debe mostrar también Java 21. Si muestra otra versión, apunta `JAVA_HOME` a un JDK 21.
 
-No hace falta instalar ninguna base de datos: H2 se ejecuta en memoria dentro de la propia aplicación, y sus datos se pierden al pararla.
+La aplicación usa **PostgreSQL**. No hace falta instalarlo: el repositorio incluye un `docker-compose.yml` que lo levanta en un contenedor. Si prefieres usar un PostgreSQL propio, también sirve (ver [Configuración de la base de datos](#configuración-de-la-base-de-datos)).
 
 ## Puesta en marcha desde cero
 
@@ -53,7 +54,17 @@ mvn clean package
 
 Este comando compila, ejecuta los tests unitarios y genera un ejecutable en `target/tasky.jar`, con todas las dependencias y un servidor web embebido.
 
-### 4. Ejecutar
+### 4. Levantar PostgreSQL
+
+```bash
+docker compose up -d
+```
+
+Arranca PostgreSQL 16 en `localhost:5432` con la base de datos `tasky` (usuario `tasky`, contraseña `tasky`). Los datos se guardan en el volumen `tasky-data`, así que **persisten entre reinicios**. Para pararlo, `docker compose down` (añade `-v` para borrar también los datos).
+
+Hibernate crea y actualiza las tablas automáticamente al arrancar la aplicación (`spring.jpa.hibernate.ddl-auto=update`).
+
+### 5. Ejecutar
 
 ```bash
 java -jar target/tasky.jar
@@ -61,7 +72,7 @@ java -jar target/tasky.jar
 
 La aplicación escucha en `http://localhost:8080`. Para pararla, `Ctrl+C`.
 
-### 5. Comprobar que funciona
+### 6. Comprobar que funciona
 
 En otra terminal, se registra una tarea y se recupera:
 
@@ -90,7 +101,29 @@ curl -i http://localhost:8080/api/tasks/stats
 curl -i http://localhost:8080/api/tasks/999
 ```
 
-La fecha límite debe ser hoy o futura. La consola de H2 está disponible en `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:taskdb`, usuario `sa`, sin contraseña).
+La fecha límite debe ser hoy o futura. Para inspeccionar los datos directamente en la base de datos:
+
+```bash
+docker compose exec postgres psql -U tasky -d tasky -c "SELECT * FROM tasks;"
+```
+
+### Configuración de la base de datos
+
+La conexión se configura con variables de entorno; si no se definen, se usan los valores del `docker-compose.yml`:
+
+| Variable | Por defecto | Descripción |
+|----------|-------------|-------------|
+| `DB_URL`      | `jdbc:postgresql://localhost:5432/tasky` | URL JDBC de PostgreSQL |
+| `DB_USERNAME` | `tasky` | Usuario |
+| `DB_PASSWORD` | `tasky` | Contraseña |
+
+Por ejemplo, para apuntar a otro servidor:
+
+```bash
+DB_URL=jdbc:postgresql://mi-servidor:5432/tasky DB_USERNAME=yo DB_PASSWORD=secreto java -jar target/tasky.jar
+```
+
+`docker compose` también lee `DB_USERNAME`, `DB_PASSWORD` y `DB_NAME` (de la terminal o de un fichero `.env`, que está en `.gitignore`), así que se pueden cambiar las credenciales en ambos lados a la vez.
 
 ## API
 
