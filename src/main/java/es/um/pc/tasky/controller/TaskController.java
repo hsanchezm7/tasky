@@ -25,6 +25,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/tasks")
 public class TaskController {
 
+  private static final String TEST_DOCKER = "TEST_DOCKER_V2";
+
   private final TaskService taskService;
 
   public TaskController(TaskService taskService) {
