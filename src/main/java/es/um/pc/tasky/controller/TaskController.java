@@ -25,6 +25,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/tasks")
 public class TaskController {
 
+  private static final String TEST_DOCKER = "TEST_DOCKER_V2";
+
   private final TaskService taskService;
 
   public TaskController(TaskService taskService) {
@@ -64,9 +66,8 @@ public class TaskController {
 
   @GetMapping("/overdue")
   public ResponseEntity<List<TaskResponse>> getOverdueTasks() {
-    List<TaskResponse> overdueTasks = taskService.getOverdueTasks().stream()
-        .map(this::toResponse)
-        .collect(Collectors.toList());
+    List<TaskResponse> overdueTasks =
+        taskService.getOverdueTasks().stream().map(this::toResponse).collect(Collectors.toList());
     return ResponseEntity.ok(overdueTasks);
   }
 

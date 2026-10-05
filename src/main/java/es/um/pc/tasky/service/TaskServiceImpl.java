@@ -91,16 +91,17 @@ public class TaskServiceImpl implements TaskService {
     }
 
     // Una tarea vencida sigue abierta y su fecha límite ya pasó; la que vence hoy no cuenta.
-    long overdue = taskRepository.countByDueDateBeforeAndStatusNotIn(
-        LocalDate.now(), EnumSet.of(TaskStatus.COMPLETED, TaskStatus.CANCELLED));
+    long overdue =
+        taskRepository.countByDueDateBeforeAndStatusNotIn(
+            LocalDate.now(), EnumSet.of(TaskStatus.COMPLETED, TaskStatus.SUSPENDED));
 
     return new TaskStatsResponse(taskRepository.count(), byStatus, byPriority, overdue);
   }
-  
+
   @Override
   public List<Task> getOverdueTasks() {
     return taskRepository.findByDueDateBeforeAndStatusNotIn(
-        LocalDate.now(), EnumSet.of(TaskStatus.COMPLETED, TaskStatus.CANCELLED));
+        LocalDate.now(), EnumSet.of(TaskStatus.COMPLETED, TaskStatus.SUSPENDED));
   }
 
   /** Regla de negocio: no se puede crear ni dejar una tarea con una fecha límite pasada. */
@@ -109,5 +110,4 @@ public class TaskServiceImpl implements TaskService {
       throw new InvalidTaskException("La fecha límite no puede ser una fecha pasada");
     }
   }
-  
 }
