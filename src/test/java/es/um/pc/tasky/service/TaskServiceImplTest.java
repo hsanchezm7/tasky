@@ -227,9 +227,9 @@ class TaskServiceImplTest {
   @Test
   @DisplayName("Filtrar por un estado sin tareas devuelve una lista vacía")
   void getAllTasks_withStatusWithoutMatches_returnsEmptyList() {
-    when(taskRepository.findByStatus(TaskStatus.CANCELLED)).thenReturn(List.of());
+    when(taskRepository.findByStatus(TaskStatus.SUSPENDED)).thenReturn(List.of());
 
-    List<Task> result = taskService.getAllTasks(TaskStatus.CANCELLED);
+    List<Task> result = taskService.getAllTasks(TaskStatus.SUSPENDED);
 
     assertTrue(result.isEmpty());
   }
@@ -254,7 +254,7 @@ class TaskServiceImplTest {
             TaskStatus.PENDING, 3L,
             TaskStatus.IN_PROGRESS, 1L,
             TaskStatus.COMPLETED, 2L,
-            TaskStatus.CANCELLED, 0L),
+            TaskStatus.SUSPENDED, 0L),
         stats.getByStatus());
     assertEquals(
         Map.of(TaskPriority.LOW, 1L, TaskPriority.MEDIUM, 4L, TaskPriority.HIGH, 1L),
@@ -276,17 +276,18 @@ class TaskServiceImplTest {
   }
 
   @Test
-  @DisplayName("Las vencidas se cuentan desde hoy y excluyen las tareas COMPLETED y CANCELLED")
+  @DisplayName("Las vencidas se cuentan desde hoy y excluyen las tareas COMPLETED y SUSPENDED")
   void getStats_overdue_usesTodayAndExcludesClosedStatuses() {
     taskService.getStats();
 
     verify(taskRepository)
         .countByDueDateBeforeAndStatusNotIn(
-            eq(LocalDate.now()), eq(EnumSet.of(TaskStatus.COMPLETED, TaskStatus.CANCELLED)));
+            eq(LocalDate.now()), eq(EnumSet.of(TaskStatus.COMPLETED, TaskStatus.SUSPENDED)));
   }
 
   @Test
-  @DisplayName("Devuelve las tareas vencidas delegando en el repositorio con la fecha actual y excluyendo COMPLETED y CANCELLED")
+  @DisplayName(
+      "Devuelve las tareas vencidas delegando en el repositorio con la fecha actual y excluyendo COMPLETED y SUSPENDED")
   void getOverdueTasks_delegatesToRepositoryWithTodayAndExcludesClosedStatuses() {
     Task overdueTask = new Task();
     overdueTask.setId(1L);
@@ -295,7 +296,7 @@ class TaskServiceImplTest {
     overdueTask.setDueDate(LocalDate.now().minusDays(2));
 
     when(taskRepository.findByDueDateBeforeAndStatusNotIn(
-        eq(LocalDate.now()), eq(EnumSet.of(TaskStatus.COMPLETED, TaskStatus.CANCELLED))))
+            eq(LocalDate.now()), eq(EnumSet.of(TaskStatus.COMPLETED, TaskStatus.SUSPENDED))))
         .thenReturn(List.of(overdueTask));
 
     List<Task> result = taskService.getOverdueTasks();
@@ -304,14 +305,14 @@ class TaskServiceImplTest {
     assertEquals("Tarea vencida", result.get(0).getTitle());
     verify(taskRepository)
         .findByDueDateBeforeAndStatusNotIn(
-            eq(LocalDate.now()), eq(EnumSet.of(TaskStatus.COMPLETED, TaskStatus.CANCELLED)));
+            eq(LocalDate.now()), eq(EnumSet.of(TaskStatus.COMPLETED, TaskStatus.SUSPENDED)));
   }
 
   @Test
   @DisplayName("Si no hay tareas vencidas, devuelve una lista vacía")
   void getOverdueTasks_whenNoneOverdue_returnsEmptyList() {
     when(taskRepository.findByDueDateBeforeAndStatusNotIn(
-        eq(LocalDate.now()), eq(EnumSet.of(TaskStatus.COMPLETED, TaskStatus.CANCELLED))))
+            eq(LocalDate.now()), eq(EnumSet.of(TaskStatus.COMPLETED, TaskStatus.SUSPENDED))))
         .thenReturn(List.of());
 
     List<Task> result = taskService.getOverdueTasks();
@@ -319,6 +320,6 @@ class TaskServiceImplTest {
     assertTrue(result.isEmpty());
     verify(taskRepository)
         .findByDueDateBeforeAndStatusNotIn(
-            eq(LocalDate.now()), eq(EnumSet.of(TaskStatus.COMPLETED, TaskStatus.CANCELLED)));
+            eq(LocalDate.now()), eq(EnumSet.of(TaskStatus.COMPLETED, TaskStatus.SUSPENDED)));
   }
 }

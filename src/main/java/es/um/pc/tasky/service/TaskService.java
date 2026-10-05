@@ -24,7 +24,7 @@ public interface TaskService {
 
   /**
    * Devuelve un resumen de las tareas: total, recuento por estado y por prioridad, y número de
-   * tareas vencidas (fecha límite anterior a hoy y estado distinto de COMPLETED y CANCELLED).
+   * tareas vencidas (fecha límite anterior a hoy y estado distinto de COMPLETED y SUSPENDED).
    */
   TaskStatsResponse getStats();
 

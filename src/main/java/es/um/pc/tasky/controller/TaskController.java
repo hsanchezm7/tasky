@@ -64,9 +64,8 @@ public class TaskController {
 
   @GetMapping("/overdue")
   public ResponseEntity<List<TaskResponse>> getOverdueTasks() {
-    List<TaskResponse> overdueTasks = taskService.getOverdueTasks().stream()
-        .map(this::toResponse)
-        .collect(Collectors.toList());
+    List<TaskResponse> overdueTasks =
+        taskService.getOverdueTasks().stream().map(this::toResponse).collect(Collectors.toList());
     return ResponseEntity.ok(overdueTasks);
   }
 
