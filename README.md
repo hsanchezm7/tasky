@@ -54,31 +54,46 @@ mvn clean package
 
 Este comando compila, ejecuta los tests unitarios y genera un ejecutable en `target/tasky.jar`, con todas las dependencias y un servidor web embebido.
 
-### 4. Levantar PostgreSQL
+### 4. Crear el fichero `.env`
 
 ```bash
-docker compose up -d
+cp .env.example .env
 ```
 
-Arranca PostgreSQL 16 en `localhost:5432` con la base de datos `tasky` (usuario `tasky`, contraseña `tasky`). Los datos se guardan en el volumen `tasky-data`, así que **persisten entre reinicios**. Para pararlo, `docker compose down` (añade `-v` para borrar también los datos).
+`docker-compose.yml` no guarda la contraseña: la exige con `${POSTGRES_PASSWORD:?...}`, así que **Compose se niega a arrancar si falta el `.env`** (o la variable). El `.env` está en `.gitignore`; edítalo para poner tus propios valores.
 
-Hibernate crea y actualiza las tablas automáticamente al arrancar la aplicación (`spring.jpa.hibernate.ddl-auto=update`).
+| Variable | Valor en `.env.example` | Descripción |
+|----------|-------------------------|-------------|
+| `API_PORT`          | `8084`             | Puerto del host donde se publica la API |
+| `POSTGRES_DB`       | `tareas`           | Base de datos |
+| `POSTGRES_USER`     | `app`              | Usuario |
+| `POSTGRES_PASSWORD` | `secret_local_dev` | Contraseña (obligatoria) |
 
-### 5. Ejecutar
+### 5. Levantar la aplicación con Docker Compose
 
 ```bash
-java -jar target/tasky.jar
+docker compose up -d --build
+docker compose ps        # espera a que db y api aparezcan como (healthy) / running
 ```
 
-La aplicación escucha en `http://localhost:8080`. Para pararla, `Ctrl+C`.
+Se levantan dos servicios:
+
+- **`db`**: PostgreSQL 16. Dentro de la red de Compose escucha en `db:5432`; además se publica en `127.0.0.1:5432` solo para conectarse con un cliente SQL desde tu máquina. Los datos se guardan en el volumen `db-data`, así que **persisten entre reinicios**.
+- **`api`**: la aplicación, construida con el `Dockerfile`. Arranca cuando `db` está *healthy* y se publica en **`http://localhost:8084`** (configurable con `API_PORT`).
+
+El healthcheck de `db` usa `pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}`. El `$$` escapa la interpolación de Compose: sin él, Compose sustituiría la variable al leer el YAML; con él, llega un `$` literal y la expande el shell **dentro del contenedor**, donde esas variables ya existen.
+
+Para pararlo, `docker compose down` (añade `-v` para borrar también los datos). Hibernate crea y actualiza las tablas automáticamente al arrancar (`spring.jpa.hibernate.ddl-auto=update`).
+
+> **Sin Docker para la API.** También puedes levantar solo la base de datos (`docker compose up -d db`) y ejecutar la API en local con `java -jar target/tasky.jar`, apuntándola a ella con las variables de [Configuración de la base de datos](#configuración-de-la-base-de-datos). En ese caso la API escucha en `http://localhost:8080`.
 
 ### 6. Comprobar que funciona
 
-En otra terminal, se registra una tarea y se recupera:
+Se registra una tarea y se recupera (si ejecutas la API con `java -jar`, cambia el puerto a `8080`):
 
 ```bash
 # Crear una tarea (201 Created; el estado por defecto es PENDING)
-curl -i -X POST http://localhost:8080/api/tasks \
+curl -i -X POST http://localhost:8084/api/tasks \
   -H "Content-Type: application/json" \
   -d '{
         "title": "Entregar práctica",
@@ -88,28 +103,33 @@ curl -i -X POST http://localhost:8080/api/tasks \
       }'
 
 # Recuperarla por id (200 OK)
-curl -i http://localhost:8080/api/tasks/1
+curl -i http://localhost:8084/api/tasks/1
 
 # Listar todas, o filtrar por estado
-curl -i http://localhost:8080/api/tasks
-curl -i "http://localhost:8080/api/tasks?status=PENDING"
+curl -i http://localhost:8084/api/tasks
+curl -i "http://localhost:8084/api/tasks?status=PENDING"
 
 # Resumen de tareas
-curl -i http://localhost:8080/api/tasks/stats
+curl -i http://localhost:8084/api/tasks/stats
+
+# Estado de la aplicación (Actuator)
+curl -i http://localhost:8084/actuator/health
 
 # Recurso inexistente: 404 con JSON de error
-curl -i http://localhost:8080/api/tasks/999
+curl -i http://localhost:8084/api/tasks/999
 ```
 
 La fecha límite debe ser hoy o futura. Para inspeccionar los datos directamente en la base de datos:
 
 ```bash
-docker compose exec postgres psql -U tasky -d tasky -c "SELECT * FROM tasks;"
+docker compose exec db psql -U app -d tareas -c "SELECT * FROM tasks;"
 ```
 
 ### Configuración de la base de datos
 
-La conexión se configura con variables de entorno; si no se definen, se usan los valores del `docker-compose.yml`:
+Dentro de Docker Compose, la API recibe la conexión en `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` y `SPRING_DATASOURCE_PASSWORD`, construidas a partir del `.env`. No hay que tocar nada.
+
+Si ejecutas la API fuera de Docker (`java -jar`), la conexión se configura con estas variables de entorno:
 
 | Variable | Por defecto | Descripción |
 |----------|-------------|-------------|
@@ -117,13 +137,22 @@ La conexión se configura con variables de entorno; si no se definen, se usan lo
 | `DB_USERNAME` | `tasky` | Usuario |
 | `DB_PASSWORD` | `tasky` | Contraseña |
 
-Por ejemplo, para apuntar a otro servidor:
+Los valores por defecto **no** coinciden con la base de datos de Compose, así que para usarla hay que indicarlos:
 
 ```bash
-DB_URL=jdbc:postgresql://mi-servidor:5432/tasky DB_USERNAME=yo DB_PASSWORD=secreto java -jar target/tasky.jar
+DB_URL=jdbc:postgresql://localhost:5432/tareas DB_USERNAME=app DB_PASSWORD=secret_local_dev java -jar target/tasky.jar
 ```
 
-`docker compose` también lee `DB_USERNAME`, `DB_PASSWORD` y `DB_NAME` (de la terminal o de un fichero `.env`, que está en `.gitignore`), así que se pueden cambiar las credenciales en ambos lados a la vez.
+## Dev Container
+
+El repositorio incluye `.devcontainer/devcontainer.json` para trabajar en un entorno ya preparado, sin instalar nada salvo Docker y VS Code (con la extensión *Dev Containers*) o GitHub Codespaces.
+
+- **Imagen**: `mcr.microsoft.com/devcontainers/java:21`, con Maven (feature `java`) y Docker-in-Docker (feature `docker-in-docker`), así que dentro del contenedor funcionan `mvn` y `docker compose`.
+- **Puertos reenviados**: `8080` (API) y `5432` (PostgreSQL).
+- **`postCreateCommand`**: crea el `.env` a partir de `.env.example` si no existe, activa los hooks (`git config core.hooksPath .githooks`) y descarga las dependencias con `mvn -B dependency:go-offline`.
+- **Extensiones**: Java Extension Pack y Docker.
+
+Para usarlo: abre el repositorio en VS Code y elige **Dev Containers: Reopen in Container**. La primera vez tarda unos minutos; después ya puedes ejecutar `mvn clean package` o `docker compose up -d --build` desde la terminal integrada. `devcontainer-lock.json` fija las versiones exactas de las features para que todos usen el mismo entorno.
 
 ## API
 
@@ -175,6 +204,8 @@ Códigos de respuesta: `200` OK, `201` creada, `204` borrada, `400` petición in
 
 ```
 .githooks/pre-commit                       # Hook: formatea con Spotless antes de cada commit
+.devcontainer/                             # Entorno de desarrollo en contenedor
+Dockerfile, docker-compose.yml, .env.example  # Imagen de la API y orquestación con PostgreSQL
 src/main/java/es/um/pc/tasky
 ├── TaskyApplication.java                  # Clase principal
 ├── model/                                 # Entidad Task y enums TaskStatus / TaskPriority
@@ -202,7 +233,7 @@ chore(build): añade Spotless para formateo automático
 docs(readme): documenta la puesta en marcha
 ```
 
-Tipos habituales: `feat`, `fix`, `docs`, `test`, `refactor`, `chore` y `ci`.
+Tipos habituales: `feat`, `fix`, `docs`, `test`, `refactor`, `build`, `chore` y `ci`.
 
 **Formato.** El código Java sigue el estilo de Google (`google-java-format`) aplicado con [Spotless](https://github.com/diffplug/spotless). El hook de pre-commit lo aplica automáticamente, y también se puede ejecutar a mano con `mvn spotless:apply`.
 
