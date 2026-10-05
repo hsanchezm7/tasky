@@ -4,13 +4,15 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-tareas}
       POSTGRES_USER: ${POSTGRES_USER:-app}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret_local_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD; crea el .env con cp .env.example .env}
     # Solo para conectarte desde tu máquina con un cliente SQL.
     ports: ["127.0.0.1:5432:5432"]
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app} -d ${POSTGRES_DB:-tareas}"]
+      # $$ escapa la interpolación de Compose: la variable la expande el shell
+      # dentro del contenedor, donde POSTGRES_USER y POSTGRES_DB ya están definidas.
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -20,9 +22,9 @@ services:
     # Puerto del host configurable: API_PORT=XXXX docker compose up para usar otro.
     ports: ["${API_PORT:-8084}:8080"]
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5433/${POSTGRES_DB:-tareas}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-tareas}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-app}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-secret_local_dev}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD; crea el .env con cp .env.example .env}
     depends_on:
       db:
         condition: service_healthy
