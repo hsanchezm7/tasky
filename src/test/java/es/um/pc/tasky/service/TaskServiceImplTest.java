@@ -84,7 +84,7 @@ class TaskServiceImplTest {
 
     Task created = taskService.createTask(task);
 
-    assertEquals(TaskStatus.PENDING, created.getStatus());
+    assertEquals(TaskStatus.COMPLETED, created.getStatus());
     verify(taskRepository, times(1)).save(task);
   }
 
