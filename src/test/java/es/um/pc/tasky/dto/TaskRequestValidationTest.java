@@ -102,6 +102,7 @@ class TaskRequestValidationTest {
 
     Set<ConstraintViolation<TaskRequest>> violations = validator.validate(request);
 
-    assertTrue(violations.isEmpty());
+    // Fallo provocado deliberadamente para comprobar que el CI detecta el error
+    assertFalse(violations.isEmpty());
   }
 }
