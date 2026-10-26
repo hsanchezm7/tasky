@@ -1,0 +1,24 @@
+# deploy/servidores/docker-compose.yml
+# simula la infraestructura: maquinas a las que Ansible se conecta por SSH.
+services:
+  app1:
+    image: rastasheep/ubuntu-sshd:18.04   # Ubuntu con sshd ya arrancado
+    container_name: app1
+    privileged: true            # necesario: dentro correrá su propio Docker
+    ports:
+      - "2223:22"
+      - "8081:8080"   # aquí quedará la API una vez desplegada dentro
+
+  app2:
+    image: rastasheep/ubuntu-sshd:18.04
+    container_name: app2
+    privileged: true
+    ports:
+      - "2224:22"
+      - "8082:8080"
+
+  db1:
+    image: rastasheep/ubuntu-sshd:18.04
+    container_name: db1
+    privileged: true
+    ports: [ "2225:22" ]
