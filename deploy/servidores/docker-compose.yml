@@ -1,6 +1,5 @@
 # deploy/servidores/docker-compose.yml
-# Simula la infraestructura: NO tiene nada que ver con el docker-compose.yml
-# de la app (Boletín 3). Esto son las "máquinas" a las que Ansible se conecta por SSH.
+# simula la infraestructura: maquinas a las que Ansible se conecta por SSH.
 services:
   app1:
     image: rastasheep/ubuntu-sshd:18.04   # Ubuntu con sshd ya arrancado

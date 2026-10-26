@@ -22,12 +22,12 @@
   tasks:
     - name: Base de datos PostgreSQL
       community.docker.docker_container:
-        name: tareas-db
+        name: tasky-db
         image: postgres:16
         state: started
         restart_policy: always
         network_mode: host
-        volumes: [ "tareas-db-data:/var/lib/postgresql/data" ]
+        volumes: [ "tasky-db-data:/var/lib/postgresql/data" ]
         env:
           POSTGRES_DB: "{{ db_name }}"
           POSTGRES_USER: "{{ db_user }}"
@@ -58,7 +58,7 @@
 
     - name: Arrancar el contenedor de la API
       community.docker.docker_container:
-        name: tareas-api
+        name: tasky-api
         image: "{{ imagen }}"
         state: started
         recreate: false          # idempotencia: no lo toca si ya es esta versión
