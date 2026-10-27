@@ -473,7 +473,7 @@ La ejecución de Release finalizó correctamente, con los jobs `publish` y `depl
 |---|---|---|
 | Claude | **Cambios en código:** redacción de la flota, el inventario y el playbook adaptados al proyecto, exposición de la versión en `/actuator/info` y la opción `image_name_mismatch`. | 2, 4, 6 |
 | Claude | **Diagnóstico:** detectar la versión incorrecta de Ansible en WSL, la errata en `requeriments.yml` y por qué el `ping` fallaba tras crear el Vault; interpretar las salidas del playbook y el aviso de deprecación. | — (no genera commits) |
-| Claude | **Diagrama de arquitectura:** dibujo de `docs/media/b6-arquitectura.svg` y de la tabla de pasos de la Parte G. | — (pendiente de commit) |
+| Claude | **Diagrama de arquitectura:** dibujo de `docs/media/b6-arquitectura.svg` y de la tabla de pasos de la Parte G. | — commit de la documentación |
 | Claude | **Desarrollo del boletín:** ayuda en la redacción de esta memoria a partir del historial del repositorio y de las salidas guardadas en `deploy/salidas/`. | — (no genera commits) |
 
 En todos los casos se ha revisado y entendido lo generado antes de incorporarlo. Ningún commit ha sido hecho por la IA.

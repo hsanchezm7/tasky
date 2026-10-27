@@ -56,9 +56,9 @@
   <path d="M385,105 V58 H870 V80" stroke="#0969da" stroke-width="2" fill="none" marker-end="url(#a-https)"/>
   <text x="395" y="52" font-size="12" fill="#0969da"><tspan font-weight="700">③</tspan> build + push de la imagen X.Y.Z · HTTPS (la inicia el job publish)</text>
 
-  <!-- ================= Tu ordenador ================= -->
+  <!-- ================= Windows 11 (anfitrión físico) ================= -->
   <rect x="20" y="360" width="1240" height="720" rx="12" fill="#fffaf3" stroke="#c2410c" stroke-width="2"/>
-  <text x="40" y="386" font-size="16" font-weight="700" fill="#c2410c">Tu ordenador · Windows 11 (anfitrión físico)</text>
+  <text x="40" y="386" font-size="16" font-weight="700" fill="#c2410c">Windows 11 (anfitrión físico)</text>
 
   <rect x="40" y="410" width="200" height="110" rx="8" fill="#fff" stroke="#c2410c"/>
   <text x="140" y="435" text-anchor="middle" font-weight="700">Tú (desarrollador)</text>
