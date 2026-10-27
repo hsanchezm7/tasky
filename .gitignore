@@ -3,3 +3,5 @@ target/
 .idea/
 .env
 docs/site/
+actions-runner/
+.vscode/
